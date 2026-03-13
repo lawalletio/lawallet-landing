@@ -8,7 +8,7 @@ import { useScrollAnimation } from './hooks'
 
 export const WaitlistSection = () => {
   const { ref, isVisible } = useScrollAnimation()
-  const [email, setEmail] = React.useState('')
+  const [contact, setContact] = React.useState('')
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [isSuccess, setIsSuccess] = React.useState(false)
   const [error, setError] = React.useState('')
@@ -16,25 +16,24 @@ export const WaitlistSection = () => {
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault()
     setError('')
-    setIsSubmitting(true)
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!email || !emailRegex.test(email)) {
-      setError('Please enter a valid email address')
-      setIsSubmitting(false)
+    if (!contact.trim()) {
+      setError('Enter an email, npub, or NIP-05 address')
       return
     }
+
+    setIsSubmitting(true)
 
     try {
       const response = await fetch('/api/waitlist/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email: contact })
       })
       const data = await response.json()
       if (data.success) {
         setIsSuccess(true)
-        setEmail('')
+        setContact('')
       } else {
         setError(data.error || 'Subscription failed. Please try again.')
       }
@@ -48,7 +47,7 @@ export const WaitlistSection = () => {
   const resetForm = () => {
     setIsSuccess(false)
     setError('')
-    setEmail('')
+    setContact('')
   }
 
   if (isSuccess) {
@@ -73,7 +72,7 @@ export const WaitlistSection = () => {
               size="sm"
               className="border-white/10 text-white/50 hover:bg-white/5 hover:text-white bg-transparent"
             >
-              Add another email
+              Add another
             </Button>
           </div>
         </div>
@@ -113,19 +112,19 @@ export const WaitlistSection = () => {
         >
           <div className="relative">
             <Input
-              type="email"
-              placeholder="you@yourdomain.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder="email, npub or NIP-05..."
+              value={contact}
+              onChange={(e) => setContact(e.target.value)}
               disabled={isSubmitting}
               className={`h-14 pl-5 pr-32 rounded-full bg-white/[0.04] border-white/[0.08] focus:ring-2 focus:ring-lw-gold/30 focus:border-lw-gold/30 text-white placeholder:text-white/20 font-mono text-sm transition-all duration-300 ${
                 error ? 'border-lw-coral/40 focus:ring-lw-coral/30' : ''
               } ${isSubmitting ? 'opacity-50' : ''}`}
-              aria-label="Email for waitlist"
+              aria-label="Email, npub or NIP-05 for waitlist"
             />
             <Button
               type="submit"
-              disabled={isSubmitting || !email}
+              disabled={isSubmitting || !contact}
               className="absolute top-1.5 right-1.5 h-11 rounded-full px-6 bg-lw-gold hover:bg-lw-gold/90 text-black font-semibold transition-all duration-300 shadow-md shadow-lw-gold/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
