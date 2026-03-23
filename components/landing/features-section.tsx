@@ -115,7 +115,7 @@ const FeatureCard = ({
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`spotlight-card group relative overflow-hidden rounded-2xl border border-white/[0.06] transition-all duration-500 hover:-translate-y-1 ${
+      className={`spotlight-card group relative overflow-hidden rounded-2xl border border-white/[0.06] break-inside-avoid transition-all duration-500 ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
       }`}
       style={
@@ -181,7 +181,7 @@ export const FeaturesSection = () => {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="columns-1 md:columns-2 lg:columns-3 gap-4 [&>*]:mb-4">
           {features.map((feature, index) => (
             <FeatureCard key={feature.title} feature={feature} index={index} isVisible={isVisible} />
           ))}
