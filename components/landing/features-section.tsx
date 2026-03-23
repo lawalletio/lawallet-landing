@@ -1,5 +1,6 @@
 'use client'
 
+import React, { useCallback, useRef } from 'react'
 import { Zap, Users, Radio, Nfc, Cloud, Code2 } from 'lucide-react'
 import { useScrollAnimation } from './hooks'
 
@@ -69,6 +70,91 @@ const gradientBgMap: Record<string, string> = {
   'lw-coral': 'bg-gradient-to-br from-lw-coral/15 via-lw-coral/5 to-lw-dark'
 }
 
+const spotlightColorMap: Record<string, string> = {
+  'lw-gold': '245, 166, 35',
+  'nwc-purple': '139, 92, 246',
+  'lw-teal': '38, 166, 154',
+  'lw-coral': '229, 57, 53'
+}
+
+const FeatureCard = ({
+  feature,
+  index,
+  isVisible
+}: {
+  feature: (typeof features)[number]
+  index: number
+  isVisible: boolean
+}) => {
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const card = cardRef.current
+      if (!card) return
+      const rect = card.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      card.style.setProperty('--mouse-x', `${x}px`)
+      card.style.setProperty('--mouse-y', `${y}px`)
+    },
+    []
+  )
+
+  const handleMouseEnter = useCallback(() => {
+    cardRef.current?.classList.add('is-hovered')
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    cardRef.current?.classList.remove('is-hovered')
+  }, [])
+
+  return (
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`spotlight-card group relative overflow-hidden rounded-2xl border border-white/[0.06] transition-all duration-500 hover:-translate-y-1 ${
+        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+      }`}
+      style={
+        {
+          transitionDelay: isVisible ? `${index * 100 + 200}ms` : '0ms',
+          '--spotlight-color': spotlightColorMap[feature.color]
+        } as React.CSSProperties
+      }
+    >
+      {/* Cursor-following spotlight overlay */}
+      <div className="spotlight-overlay pointer-events-none absolute inset-0 z-10 rounded-2xl" />
+      {/* Cursor-following border glow */}
+      <div className="spotlight-border pointer-events-none absolute inset-0 z-10 rounded-2xl" />
+
+      {/* Full-card gradient background */}
+      <div className={`absolute inset-0 ${gradientBgMap[feature.color]}`} />
+      <div className="absolute inset-0 bg-gradient-to-t from-lw-dark via-lw-dark/50 to-transparent" />
+
+      {/* Large icon visual */}
+      <div className="relative z-[1] flex items-center justify-center pt-12 pb-8">
+        <div
+          className={`absolute w-28 h-28 rounded-full ${bgColorMap[feature.color]} blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500`}
+        />
+        <feature.icon
+          className={`relative h-16 w-16 ${colorMap[feature.color]} opacity-30 group-hover:opacity-60 group-hover:scale-110 transition-all duration-500`}
+        />
+      </div>
+
+      {/* Content at bottom */}
+      <div className="relative z-[1] px-6 pb-6">
+        <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
+        <p className="text-sm text-white/40 leading-relaxed overflow-hidden transition-all duration-300 mt-2 md:max-h-0 md:opacity-0 md:mt-0 md:group-hover:max-h-28 md:group-hover:opacity-100 md:group-hover:mt-2">
+          {feature.description}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export const FeaturesSection = () => {
   const { ref, isVisible } = useScrollAnimation()
 
@@ -88,7 +174,8 @@ export const FeaturesSection = () => {
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
             }`}
           >
-            A CRM with <span className="text-gradient-lightning">Lightning</span> and <span className="text-gradient-nostr">Nostr</span>
+            A CRM with <span className="text-gradient-lightning">Lightning</span> and{' '}
+            <span className="text-gradient-nostr">Nostr</span>
             <br />
             <span className="text-gradient-gold">built in, not bolted on</span>
           </h2>
@@ -96,37 +183,7 @@ export const FeaturesSection = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((feature, index) => (
-            <div
-              key={feature.title}
-              className={`glow-card group relative overflow-hidden rounded-2xl border border-white/[0.06] transition-all duration-500 hover:-translate-y-1 ${
-                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}
-              style={{
-                transitionDelay: isVisible ? `${index * 100 + 200}ms` : '0ms'
-              }}
-            >
-              {/* Full-card gradient background */}
-              <div className={`absolute inset-0 ${gradientBgMap[feature.color]}`} />
-              <div className="absolute inset-0 bg-gradient-to-t from-lw-dark via-lw-dark/50 to-transparent" />
-
-              {/* Large icon visual */}
-              <div className="relative flex items-center justify-center pt-12 pb-8">
-                <div
-                  className={`absolute w-28 h-28 rounded-full ${bgColorMap[feature.color]} blur-2xl opacity-40 group-hover:opacity-60 transition-opacity duration-500`}
-                />
-                <feature.icon
-                  className={`relative h-16 w-16 ${colorMap[feature.color]} opacity-30 group-hover:opacity-60 group-hover:scale-110 transition-all duration-500`}
-                />
-              </div>
-
-              {/* Content at bottom */}
-              <div className="relative px-6 pb-6">
-                <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
-                <p className="text-sm text-white/40 leading-relaxed overflow-hidden transition-all duration-300 mt-2 md:max-h-0 md:opacity-0 md:mt-0 md:group-hover:max-h-28 md:group-hover:opacity-100 md:group-hover:mt-2">
-                  {feature.description}
-                </p>
-              </div>
-            </div>
+            <FeatureCard key={feature.title} feature={feature} index={index} isVisible={isVisible} />
           ))}
         </div>
       </div>

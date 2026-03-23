@@ -101,23 +101,43 @@
   z-index: 0;
 }
 
-/* Glowing card borders */
-.glow-card {
+/* Spotlight card — cursor-following glow */
+.spotlight-card {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+  --spotlight-color: 245, 166, 35;
   position: relative;
+  background: rgba(10, 10, 15, 0.8);
+  transition:
+    transform 0.5s ease,
+    border-color 0.4s ease,
+    box-shadow 0.4s ease;
 }
-.glow-card::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  pointer-events: none;
-  background: linear-gradient(
-    135deg,
-    rgba(245, 166, 35, 0.3),
-    rgba(38, 166, 154, 0.3),
-    rgba(229, 57, 53, 0.1)
+
+/* Cursor-following radial spotlight on the card surface */
+.spotlight-overlay {
+  background: radial-gradient(
+    350px circle at var(--mouse-x) var(--mouse-y),
+    rgba(var(--spotlight-color), 0.12),
+    transparent 60%
   );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.spotlight-card.is-hovered .spotlight-overlay {
+  opacity: 1;
+}
+
+/* Cursor-following border glow */
+.spotlight-border {
+  background: radial-gradient(
+    400px circle at var(--mouse-x) var(--mouse-y),
+    rgba(var(--spotlight-color), 0.45),
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  /* Mask to only show on the border */
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -126,11 +146,18 @@
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  padding: 1px;
 }
-.glow-card:hover::before {
+.spotlight-card.is-hovered .spotlight-border {
   opacity: 1;
+}
+
+/* Elevated shadow on hover */
+.spotlight-card.is-hovered {
+  border-color: rgba(var(--spotlight-color), 0.15);
+  box-shadow:
+    0 8px 32px rgba(var(--spotlight-color), 0.08),
+    0 0 64px rgba(var(--spotlight-color), 0.04);
 }
 
 /* Shimmer animation for swipe button */
