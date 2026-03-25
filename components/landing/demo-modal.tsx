@@ -96,6 +96,12 @@ export const DemoModal = ({
       // silent fail
     }
     setStatus('submitted')
+    import('canvas-confetti').then(({ default: confetti }) => {
+      const colors = ['#F5A623', '#FFD580', '#26A69A', '#8B5CF6', '#ffffff']
+      const defaults = { zIndex: 99999, colors }
+      confetti({ ...defaults, particleCount: 120, spread: 120, origin: { x: 0.3, y: 0.5 } })
+      confetti({ ...defaults, particleCount: 120, spread: 120, origin: { x: 0.7, y: 0.5 } })
+    })
   }
 
   const isLoading = status === 'checking' || status === 'submitting'
@@ -130,6 +136,11 @@ export const DemoModal = ({
               </div>
               <p className="text-base font-semibold text-white mb-1">You&apos;re in!</p>
               <p className="text-sm text-white/30">We&apos;ll reach out soon.</p>
+            </div>
+          ) : status === 'submitting' ? (
+            <div className="flex flex-col items-center gap-3 py-10 mt-4 animate-fade-in">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-lw-gold/30 border-t-lw-gold" />
+              <p className="text-white/40 text-xs font-mono">Sending notification...</p>
             </div>
           ) : (
             <div className="space-y-4 mt-6">
@@ -189,20 +200,11 @@ export const DemoModal = ({
               ) : (
                 <Button
                   onClick={() => subscribe('email')}
-                  disabled={status !== 'valid-email' || isLoading}
+                  disabled={status !== 'valid-email'}
                   className="w-full h-12 rounded-xl font-semibold transition-all duration-300 shadow-lg bg-gradient-to-r from-lw-gold to-lw-gold/90 text-black shadow-lw-gold/10 hover:shadow-lw-gold/20 hover:from-lw-gold hover:to-lw-gold disabled:from-white/[0.06] disabled:to-white/[0.06] disabled:text-white/20 disabled:shadow-none disabled:cursor-not-allowed"
                 >
-                  {status === 'submitting' ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-black border-t-transparent mr-2" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      Count me in
-                      <Zap className="ml-2 h-4 w-4" />
-                    </>
-                  )}
+                  Count me in
+                  <Zap className="ml-2 h-4 w-4" />
                 </Button>
               )}
               <p className="text-center text-[11px] text-white/15 font-mono">

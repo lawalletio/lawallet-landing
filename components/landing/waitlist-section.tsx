@@ -10,6 +10,7 @@ type Step = 'input' | 'checking' | 'choose' | 'submitting' | 'success'
 
 export const WaitlistSection = () => {
   const { ref, isVisible } = useScrollAnimation()
+  const canvasRef = React.useRef<HTMLCanvasElement>(null)
   const [contact, setContact] = React.useState('')
   const [step, setStep] = React.useState<Step>('input')
   const [error, setError] = React.useState('')
@@ -76,6 +77,24 @@ export const WaitlistSection = () => {
     }
   }
 
+  React.useEffect(() => {
+    if (step === 'success' && canvasRef.current) {
+      const canvas = canvasRef.current
+      const timer = setTimeout(() => {
+        import('canvas-confetti').then(({ default: confettiModule }) => {
+          const fire = confettiModule.create(canvas, { resize: true })
+          fire({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.6 },
+            colors: ['#F5A623', '#FFD580', '#26A69A', '#8B5CF6', '#ffffff'],
+          })
+        })
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [step])
+
   const resetForm = () => {
     setStep('input')
     setError('')
@@ -85,8 +104,12 @@ export const WaitlistSection = () => {
 
   if (step === 'success') {
     return (
-      <section id="waitlist-section" className="py-20 sm:py-28">
-        <div ref={ref} className="max-w-md mx-auto px-4 text-center">
+      <section id="waitlist-section" className="relative py-20 sm:py-28">
+        <canvas
+          ref={canvasRef}
+          className="pointer-events-none absolute inset-0 z-50 h-full w-full"
+        />
+        <div ref={ref} className="relative z-10 max-w-md mx-auto px-4 text-center">
           <div
             className={`rounded-2xl border border-lw-teal/20 bg-lw-teal/5 p-8 backdrop-blur-sm transition-all duration-1000 ${
               isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
@@ -213,6 +236,14 @@ export const WaitlistSection = () => {
                 <Zap className="h-4 w-4 mr-1.5" />
                 Notify via Both
               </Button>
+            </div>
+          )}
+
+          {/* Loading spinner while submitting */}
+          {step === 'submitting' && (
+            <div className="mt-4 flex flex-col items-center gap-3 animate-fade-in">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-lw-gold/30 border-t-lw-gold" />
+              <p className="text-white/40 text-xs font-mono">Sending notification...</p>
             </div>
           )}
 
