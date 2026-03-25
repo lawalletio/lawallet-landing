@@ -87,9 +87,7 @@ export const HeroSection = () => {
             size='lg'
             className='group px-8 py-5 rounded-full bg-lw-gold hover:bg-lw-gold/90 text-black font-semibold transition-all duration-300 shadow-lg shadow-lw-gold/20 hover:shadow-lw-gold/30 hover:scale-105'
             onClick={() =>
-              document
-                .getElementById("waitlist-section")
-                ?.scrollIntoView({ behavior: "smooth" })
+              setDemoModal({ open: true, type: "admin" })
             }
           >
             Get Early Access
