@@ -1,4 +1,7 @@
+import { readFileSync } from 'fs'
+import { join } from 'path'
 import { getPublicKey, finalizeEvent } from 'nostr-tools/pure'
+import * as nip04 from 'nostr-tools/nip04'
 import * as nip19 from 'nostr-tools/nip19'
 import * as nip44 from 'nostr-tools/nip44'
 import { SimplePool } from 'nostr-tools/pool'
@@ -20,8 +23,12 @@ function hexToBytes(hex: string): Uint8Array {
 
 const DEFAULT_RELAYS = [
   'wss://relay.damus.io',
-  'wss://nos.lol',
   'wss://relay.nostr.band',
+  'wss://nos.lol',
+  'wss://relay.snort.social',
+  'wss://relay.primal.net',
+  'wss://nostr.wine',
+  'wss://purplepag.es',
 ]
 
 const WAITLIST_EVENT_KIND = 30078
@@ -34,9 +41,16 @@ function getRelays(): string[] {
 }
 
 function getSecretKey(): Uint8Array {
-  const hex = process.env.PRIVATE_KEY
-  if (!hex) throw new Error('PRIVATE_KEY is not set')
-  return hexToBytes(hex)
+  const key = process.env.PRIVATE_KEY
+  if (!key) throw new Error('PRIVATE_KEY is not set')
+
+  if (key.startsWith('nsec1')) {
+    const { type, data } = nip19.decode(key)
+    if (type !== 'nsec') throw new Error('Invalid nsec key')
+    return data
+  }
+
+  return hexToBytes(key)
 }
 
 function getOurPubkey(): string {
@@ -135,6 +149,39 @@ export async function addPubkeyToWaitlist(pubkey: string): Promise<{ added: bool
     await Promise.any(pool.publish(relays, event))
 
     return { added: true, total: updated.length }
+  } finally {
+    pool.close(relays)
+  }
+}
+
+const WAITLIST_DM_MESSAGE = readFileSync(
+  join(process.cwd(), 'templates', 'nostr-welcome.txt'),
+  'utf-8',
+)
+
+/**
+ * Send a NIP-04 encrypted DM to a pubkey with the waitlist welcome message.
+ */
+export async function sendWaitlistNostrDM(recipientPubkey: string): Promise<boolean> {
+  const relays = getRelays()
+  const pool = new SimplePool()
+
+  try {
+    const sk = getSecretKey()
+    const content = nip04.encrypt(sk, recipientPubkey, WAITLIST_DM_MESSAGE)
+
+    const event = finalizeEvent({
+      kind: 4,
+      created_at: Math.floor(Date.now() / 1000),
+      tags: [['p', recipientPubkey]],
+      content,
+    }, sk)
+
+    await Promise.any(pool.publish(relays, event))
+    return true
+  } catch (error) {
+    console.warn('Nostr DM failed:', error instanceof Error ? error.message : error)
+    return false
   } finally {
     pool.close(relays)
   }

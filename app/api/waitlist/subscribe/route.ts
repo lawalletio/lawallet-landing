@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { resolveToPublicKey, addPubkeyToWaitlist } from '@/lib/nostr'
+import { resolveToPublicKey, addPubkeyToWaitlist, sendWaitlistNostrDM } from '@/lib/nostr'
 import { submitEmailToTally, submitNip05ToTally, submitNpubToTally, submitBothToTally } from '@/lib/tally'
 import { sendWaitlistWelcomeEmail } from '@/lib/resend'
 
@@ -24,7 +24,8 @@ export async function POST(request: Request) {
       const pubkey = await resolveToPublicKey(input)
       const result = await addPubkeyToWaitlist(pubkey)
       const tallySent = await submitNpubToTally(input)
-      console.log('Waitlist (npub):', input, tallySent ? '→ Tally OK' : '→ Tally failed')
+      const dmSent = await sendWaitlistNostrDM(pubkey)
+      console.log('Waitlist (npub):', input, tallySent ? '→ Tally OK' : '→ Tally failed', dmSent ? '→ DM OK' : '→ DM failed')
       return NextResponse.json({ success: true, type: 'nostr', ...result })
     } catch (error) {
       return NextResponse.json({
@@ -50,7 +51,8 @@ export async function POST(request: Request) {
         const pubkey = await resolveToPublicKey(input)
         const result = await addPubkeyToWaitlist(pubkey)
         const tallySent = await submitNip05ToTally(input)
-        console.log('Waitlist (nip05):', input, tallySent ? '→ Tally OK' : '→ Tally failed')
+        const dmSent = await sendWaitlistNostrDM(pubkey)
+        console.log('Waitlist (nip05):', input, tallySent ? '→ Tally OK' : '→ Tally failed', dmSent ? '→ DM OK' : '→ DM failed')
         return NextResponse.json({ success: true, type: 'nostr', ...result })
       } catch (error) {
         return NextResponse.json({
@@ -67,7 +69,8 @@ export async function POST(request: Request) {
         const result = await addPubkeyToWaitlist(pubkey)
         const tallySent = await submitBothToTally(input, input)
         const emailSent = await sendWaitlistWelcomeEmail(input)
-        console.log('Waitlist (both):', input, tallySent ? '→ Tally OK' : '→ Tally failed', emailSent ? '→ Email OK' : '→ Email failed')
+        const dmSent = await sendWaitlistNostrDM(pubkey)
+        console.log('Waitlist (both):', input, tallySent ? '→ Tally OK' : '→ Tally failed', emailSent ? '→ Email OK' : '→ Email failed', dmSent ? '→ DM OK' : '→ DM failed')
         return NextResponse.json({ success: true, type: 'both', ...result })
       } catch (error) {
         return NextResponse.json({
@@ -82,7 +85,8 @@ export async function POST(request: Request) {
       const pubkey = await resolveToPublicKey(input)
       const result = await addPubkeyToWaitlist(pubkey)
       const tallySent = await submitNip05ToTally(input)
-      console.log('Waitlist (nip05):', input, tallySent ? '→ Tally OK' : '→ Tally failed')
+      const dmSent = await sendWaitlistNostrDM(pubkey)
+      console.log('Waitlist (nip05):', input, tallySent ? '→ Tally OK' : '→ Tally failed', dmSent ? '→ DM OK' : '→ DM failed')
       return NextResponse.json({ success: true, type: 'nostr', ...result })
     } catch {
       if (isEmail(input)) {
