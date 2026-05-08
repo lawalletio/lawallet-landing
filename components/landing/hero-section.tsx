@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Zap, Hash, Radio, Nfc } from "lucide-react";
+import { ArrowRight, Github, BookOpen } from "lucide-react";
 import { useScrollAnimation } from "./hooks";
 import { DomainShowcase } from "./domain-showcase";
 import { DemoModal } from "./demo-modal";
@@ -20,28 +20,21 @@ export const HeroSection = () => {
         ref={ref}
         className='max-w-5xl mx-auto px-4 text-center relative z-10'
       >
-        {/* Protocol badges */}
+        {/* Open-source badge */}
         <div
-          className={`flex flex-wrap justify-center gap-2 mb-8 transition-all duration-700 ${
+          className={`flex justify-center mb-8 transition-all duration-700 ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          {(
-            [
-              { label: "Lightning", icon: Zap },
-              { label: "Nostr", icon: Hash },
-              { label: "NWC", icon: Radio },
-              { label: "BoltCard", icon: Nfc },
-            ] as const
-          ).map(({ label, icon: Icon }) => (
-            <span
-              key={label}
-              className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border border-lw-gold/20 text-lw-gold/70 bg-lw-gold/5'
-            >
-              <Icon className='h-3 w-3' />
-              {label}
-            </span>
-          ))}
+          <a
+            href='https://github.com/lawalletio'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border border-lw-gold/20 text-lw-gold/70 bg-lw-gold/5 hover:bg-lw-gold/10 hover:text-lw-gold transition-colors'
+          >
+            <Github className='h-3 w-3' />
+            Open source
+          </a>
         </div>
 
         {/* Main headline */}
@@ -50,9 +43,10 @@ export const HeroSection = () => {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
           }`}
         >
-          <span className='text-gradient-gold'>Lightning addresses</span>
-          <br />
-          <span className='text-white'>for everyone.</span>
+          <span className='block text-gradient-gold pb-3 sm:pb-4'>
+            Lightning addresses
+          </span>
+          <span className='block text-white'>for everyone.</span>
         </h1>
 
         {/* Subheadline */}
@@ -61,17 +55,14 @@ export const HeroSection = () => {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
-          The open-source{" "}
-          <span className='text-lw-gold font-medium'>
-            Lightning + Nostr CRM
+          <span className='font-medium bg-gradient-to-r from-lw-gold to-nwc-orange bg-clip-text text-transparent'>
+            Lightning
           </span>{" "}
-          for communities and companies.
-          <br className='hidden sm:block' />
-          Connect your domain. Deploy in minutes. Your users get{" "}
-          <span className='text-lw-teal font-medium'>
-            addresses, wallets, and identity
+          +{" "}
+          <span className='font-medium bg-gradient-to-r from-nwc-purple to-violet-400 bg-clip-text text-transparent'>
+            Nostr
           </span>{" "}
-          — instantly.
+          CRM for communities and brands.
         </p>
 
         {/* Animated domain example */}
@@ -92,6 +83,21 @@ export const HeroSection = () => {
           >
             Get Early Access
             <ArrowRight className='ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1' />
+          </Button>
+          <Button
+            asChild
+            variant='outline'
+            size='lg'
+            className='px-8 py-5 rounded-full bg-transparent border-white/[0.12] text-white hover:bg-white/[0.05] hover:text-lw-gold hover:border-lw-gold/30 font-semibold transition-all duration-300'
+          >
+            <a
+              href='https://docs.lawallet.io'
+              target='_blank'
+              rel='noopener noreferrer'
+            >
+              <BookOpen className='mr-2 h-4 w-4' />
+              Documentation
+            </a>
           </Button>
         </div>
 

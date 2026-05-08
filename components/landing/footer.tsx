@@ -14,6 +14,14 @@ export const Footer = () => (
 
         <div className='flex items-center gap-6 text-xs text-white/20 font-mono'>
           <a
+            href='https://docs.lawallet.io'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='hover:text-lw-gold transition-colors duration-300'
+          >
+            Docs
+          </a>
+          <a
             href='https://github.com/lawalletio/lawallet-nwc'
             target='_blank'
             className='hover:text-lw-gold transition-colors duration-300'

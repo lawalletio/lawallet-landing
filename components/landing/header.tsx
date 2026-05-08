@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Button } from '@/components/ui/button'
-import { GithubIcon, Zap } from 'lucide-react'
+import { BookOpen, Zap } from 'lucide-react'
 import { DemoModal } from './demo-modal'
 
 export const Header = () => {
@@ -57,12 +57,12 @@ export const Header = () => {
             asChild
           >
             <a
-              href="https://github.com/lawalletio/lawallet-nwc"
+              href="https://docs.lawallet.io"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <GithubIcon className="h-4 w-4 mr-1.5" />
-              <span className="hidden sm:inline">GitHub</span>
+              <BookOpen className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">Docs</span>
             </a>
           </Button>
           <Button

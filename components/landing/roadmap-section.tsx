@@ -1,6 +1,6 @@
 'use client'
 
-import { Shield, Code2, PanelTopDashed, Wallet, Zap, Globe, MessageSquare, Users } from 'lucide-react'
+import { Shield, Code2, PanelTopDashed, Wallet, Zap, Globe, MessageSquare, Users, Terminal } from 'lucide-react'
 import { useScrollAnimation } from './hooks'
 
 const roadmapItems = [
@@ -11,33 +11,39 @@ const roadmapItems = [
     icon: Shield
   },
   {
+    title: 'Admin Dashboard',
+    description: 'User management, activity monitor, Nostr login (NIP-07/46)',
+    status: 'completed' as const,
+    icon: PanelTopDashed
+  },
+  {
+    title: 'API Playground',
+    description: 'Interactive request explorer with shareable examples',
+    status: 'completed' as const,
+    icon: Terminal
+  },
+  {
     title: 'SDK & React Hooks',
     description: 'TypeScript client SDK, React hooks, CI/CD pipeline',
     status: 'in_progress' as const,
     icon: Code2
   },
   {
-    title: 'Admin Dashboard',
-    description: 'User management, activity monitor, Nostr login (NIP-07/46)',
-    status: 'planned' as const,
-    icon: PanelTopDashed
-  },
-  {
     title: 'User Dashboard & NWC Proxy',
     description: 'Profile, address config, courtesy NWC wallet provisioning',
-    status: 'planned' as const,
+    status: 'in_progress' as const,
     icon: Wallet
   },
   {
     title: 'Payment Listener & Zaps',
     description: 'NWC relay monitoring, webhooks (LUD-22), NIP-57 zaps',
-    status: 'planned' as const,
+    status: 'in_progress' as const,
     icon: Zap
   },
   {
     title: 'Deploy Everywhere',
     description: 'Vercel, Docker, Umbrel, Start9 — full documentation',
-    status: 'planned' as const,
+    status: 'in_progress' as const,
     icon: Globe
   },
   {
