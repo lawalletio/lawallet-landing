@@ -7,8 +7,8 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/.well-known/lnurlp/:username',
-        destination: 'https://beta.lawallet.io/.well-known/lnurlp/:username',
+        source: '/.well-known/lnurlp/:path*',
+        destination: 'https://beta.lawallet.io/.well-known/lnurlp/:path*',
       },
       {
         source: '/.well-known/nostr.json',
