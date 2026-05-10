@@ -68,10 +68,16 @@ export const Header = () => {
           <Button
             size="sm"
             className="rounded-full bg-lw-gold hover:bg-lw-gold/90 text-black font-semibold transition-all duration-300 shadow-md shadow-lw-gold/20 hover:shadow-lw-gold/30"
-            onClick={() => setDemoModal(true)}
+            asChild
           >
-            <Zap className="h-3.5 w-3.5 mr-1.5" />
-            Get Early Access
+            <a
+              href="https://beta.lawallet.io"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Zap className="h-3.5 w-3.5 mr-1.5" />
+              LIVE DEMO
+            </a>
           </Button>
         </div>
       </div>

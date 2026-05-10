@@ -27,7 +27,7 @@ export const HeroSection = () => {
           }`}
         >
           <a
-            href='https://github.com/lawalletio'
+            href='https://github.com/lawalletio/lawallet-nwc'
             target='_blank'
             rel='noopener noreferrer'
             className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border border-lw-gold/20 text-lw-gold/70 bg-lw-gold/5 hover:bg-lw-gold/10 hover:text-lw-gold transition-colors'
@@ -43,7 +43,7 @@ export const HeroSection = () => {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
           }`}
         >
-          <span className='block text-gradient-gold pb-3 sm:pb-4'>
+          <span className='block pb-3 sm:pb-4 bg-gradient-to-r from-[#0EA5E9] via-[#00a085] to-[#00836d] bg-clip-text text-transparent'>
             Lightning addresses
           </span>
           <span className='block text-white'>for everyone.</span>
@@ -55,14 +55,14 @@ export const HeroSection = () => {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
-          <span className='font-medium bg-gradient-to-r from-lw-gold to-nwc-orange bg-clip-text text-transparent'>
+          <span className='font-medium bg-gradient-to-r from-lightning_blue to-[#7dd3fc] bg-clip-text text-transparent'>
             Lightning
           </span>{" "}
           +{" "}
           <span className='font-medium bg-gradient-to-r from-nwc-purple to-violet-400 bg-clip-text text-transparent'>
-            Nostr
+            NOSTR
           </span>{" "}
-          CRM for communities and brands.
+          CRM for brands
         </p>
 
         {/* Animated domain example */}
@@ -81,7 +81,7 @@ export const HeroSection = () => {
               setDemoModal({ open: true, type: "admin" })
             }
           >
-            Get Early Access
+            Connect your domain
             <ArrowRight className='ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1' />
           </Button>
           <Button
@@ -90,13 +90,9 @@ export const HeroSection = () => {
             size='lg'
             className='px-8 py-5 rounded-full bg-transparent border-white/[0.12] text-white hover:bg-white/[0.05] hover:text-lw-gold hover:border-lw-gold/30 font-semibold transition-all duration-300'
           >
-            <a
-              href='https://docs.lawallet.io'
-              target='_blank'
-              rel='noopener noreferrer'
-            >
+            <a href='#deploy'>
               <BookOpen className='mr-2 h-4 w-4' />
-              Documentation
+              Deploy
             </a>
           </Button>
         </div>
