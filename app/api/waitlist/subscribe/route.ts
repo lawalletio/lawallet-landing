@@ -1,10 +1,29 @@
 import { NextResponse } from 'next/server'
-import { resolveToPublicKey, addPubkeyToWaitlist, sendWaitlistNostrDM } from '@/lib/nostr'
+import { resolveIdentity, addPubkeyToWaitlist, signWaitlistNostrDM, getDefaultRelays } from '@/lib/nostr'
 import { submitEmailToTally, submitNip05ToTally, submitNpubToTally, submitBothToTally } from '@/lib/tally'
 import { sendWaitlistWelcomeEmail } from '@/lib/resend'
 
 function isEmail(input: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input)
+}
+
+async function buildNostrPayload(input: string, tallyOp: () => Promise<boolean>) {
+  const { pubkey, nip05Relays } = await resolveIdentity(input)
+
+  const [waitlistResult, tallySent, signedEvent] = await Promise.all([
+    addPubkeyToWaitlist(pubkey),
+    tallyOp(),
+    Promise.resolve().then(() => signWaitlistNostrDM(pubkey)),
+  ])
+
+  return {
+    pubkey,
+    nip05Relays,
+    waitlistResult,
+    tallySent,
+    signedEvent,
+    bootstrapRelays: getDefaultRelays(),
+  }
 }
 
 export async function POST(request: Request) {
@@ -18,15 +37,21 @@ export async function POST(request: Request) {
   const isNpub = input.startsWith('npub1')
   const isHex = /^[0-9a-f]{64}$/i.test(input)
 
-  // npub or hex pubkey — always Nostr + submit npub to Tally
+  // npub or hex pubkey — always Nostr; signed event returned for client to publish
   if (isNpub || isHex) {
     try {
-      const pubkey = await resolveToPublicKey(input)
-      const result = await addPubkeyToWaitlist(pubkey)
-      const tallySent = await submitNpubToTally(input)
-      const dmSent = await sendWaitlistNostrDM(pubkey)
-      console.log('Waitlist (npub):', input, tallySent ? '→ Tally OK' : '→ Tally failed', dmSent ? '→ DM OK' : '→ DM failed')
-      return NextResponse.json({ success: true, type: 'nostr', ...result })
+      const { pubkey, nip05Relays, waitlistResult, tallySent, signedEvent, bootstrapRelays } =
+        await buildNostrPayload(input, () => submitNpubToTally(input))
+      console.log('Waitlist (npub):', input, tallySent ? '→ Tally OK' : '→ Tally failed', '→ DM signed')
+      return NextResponse.json({
+        success: true,
+        type: 'nostr',
+        ...waitlistResult,
+        pubkey,
+        nip05Relays,
+        bootstrapRelays,
+        signedEvent,
+      })
     } catch (error) {
       return NextResponse.json({
         success: false,
@@ -37,23 +62,29 @@ export async function POST(request: Request) {
 
   // Has @ — behavior depends on method param
   if (input.includes('@')) {
-    // method: 'email' — submit as email to Tally
     if (method === 'email') {
-      const tallySent = await submitEmailToTally(input)
-      const emailSent = await sendWaitlistWelcomeEmail(input)
+      const [tallySent, emailSent] = await Promise.all([
+        submitEmailToTally(input),
+        sendWaitlistWelcomeEmail(input),
+      ])
       console.log('Waitlist (email):', input, source || '', tallySent ? '→ Tally OK' : '→ Tally failed', emailSent ? '→ Email OK' : '→ Email failed')
       return NextResponse.json({ success: true, type: 'email' })
     }
 
-    // method: 'nostr' — resolve NIP-05, add to encrypted list, submit NIP-05 to Tally
     if (method === 'nostr') {
       try {
-        const pubkey = await resolveToPublicKey(input)
-        const result = await addPubkeyToWaitlist(pubkey)
-        const tallySent = await submitNip05ToTally(input)
-        const dmSent = await sendWaitlistNostrDM(pubkey)
-        console.log('Waitlist (nip05):', input, tallySent ? '→ Tally OK' : '→ Tally failed', dmSent ? '→ DM OK' : '→ DM failed')
-        return NextResponse.json({ success: true, type: 'nostr', ...result })
+        const { pubkey, nip05Relays, waitlistResult, tallySent, signedEvent, bootstrapRelays } =
+          await buildNostrPayload(input, () => submitNip05ToTally(input))
+        console.log('Waitlist (nip05):', input, tallySent ? '→ Tally OK' : '→ Tally failed', '→ DM signed')
+        return NextResponse.json({
+          success: true,
+          type: 'nostr',
+          ...waitlistResult,
+          pubkey,
+          nip05Relays,
+          bootstrapRelays,
+          signedEvent,
+        })
       } catch (error) {
         return NextResponse.json({
           success: false,
@@ -62,16 +93,21 @@ export async function POST(request: Request) {
       }
     }
 
-    // method: 'both' — single Tally submission with both fields + nostr list
     if (method === 'both') {
       try {
-        const pubkey = await resolveToPublicKey(input)
-        const result = await addPubkeyToWaitlist(pubkey)
-        const tallySent = await submitBothToTally(input, input)
+        const { pubkey, nip05Relays, waitlistResult, tallySent, signedEvent, bootstrapRelays } =
+          await buildNostrPayload(input, () => submitBothToTally(input, input))
         const emailSent = await sendWaitlistWelcomeEmail(input)
-        const dmSent = await sendWaitlistNostrDM(pubkey)
-        console.log('Waitlist (both):', input, tallySent ? '→ Tally OK' : '→ Tally failed', emailSent ? '→ Email OK' : '→ Email failed', dmSent ? '→ DM OK' : '→ DM failed')
-        return NextResponse.json({ success: true, type: 'both', ...result })
+        console.log('Waitlist (both):', input, tallySent ? '→ Tally OK' : '→ Tally failed', emailSent ? '→ Email OK' : '→ Email failed', '→ DM signed')
+        return NextResponse.json({
+          success: true,
+          type: 'both',
+          ...waitlistResult,
+          pubkey,
+          nip05Relays,
+          bootstrapRelays,
+          signedEvent,
+        })
       } catch (error) {
         return NextResponse.json({
           success: false,
@@ -80,18 +116,26 @@ export async function POST(request: Request) {
       }
     }
 
-    // No method specified — auto-detect (legacy behavior)
+    // No method specified — auto-detect
     try {
-      const pubkey = await resolveToPublicKey(input)
-      const result = await addPubkeyToWaitlist(pubkey)
-      const tallySent = await submitNip05ToTally(input)
-      const dmSent = await sendWaitlistNostrDM(pubkey)
-      console.log('Waitlist (nip05):', input, tallySent ? '→ Tally OK' : '→ Tally failed', dmSent ? '→ DM OK' : '→ DM failed')
-      return NextResponse.json({ success: true, type: 'nostr', ...result })
+      const { pubkey, nip05Relays, waitlistResult, tallySent, signedEvent, bootstrapRelays } =
+        await buildNostrPayload(input, () => submitNip05ToTally(input))
+      console.log('Waitlist (nip05):', input, tallySent ? '→ Tally OK' : '→ Tally failed', '→ DM signed')
+      return NextResponse.json({
+        success: true,
+        type: 'nostr',
+        ...waitlistResult,
+        pubkey,
+        nip05Relays,
+        bootstrapRelays,
+        signedEvent,
+      })
     } catch {
       if (isEmail(input)) {
-        const tallySent = await submitEmailToTally(input)
-        const emailSent = await sendWaitlistWelcomeEmail(input)
+        const [tallySent, emailSent] = await Promise.all([
+          submitEmailToTally(input),
+          sendWaitlistWelcomeEmail(input),
+        ])
         console.log('Waitlist (email):', input, source || '', tallySent ? '→ Tally OK' : '→ Tally failed', emailSent ? '→ Email OK' : '→ Email failed')
         return NextResponse.json({ success: true, type: 'email' })
       }

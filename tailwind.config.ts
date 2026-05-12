@@ -30,13 +30,14 @@ const config = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        'nwc-orange': 'hsl(36 98% 57%)',
+        'guita': '#00836d',
         'nwc-purple': 'hsl(251 100% 74%)',
         'nwc-highlight': 'hsl(40 100% 85%)',
         'lw-teal': '#26A69A',
-        'lw-gold': '#F5A623',
+        'lw-gold': '#00836d',
         'lw-coral': '#E53935',
         'lw-dark': '#0A0A0F',
+        'lightning_blue': '#0EA5E9',
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))'
@@ -128,8 +129,8 @@ const config = {
           '100%': { opacity: '1', transform: 'translateY(0)' }
         },
         'border-glow': {
-          '0%, 100%': { borderColor: 'rgba(245, 166, 35, 0.3)' },
-          '50%': { borderColor: 'rgba(245, 166, 35, 0.6)' }
+          '0%, 100%': { borderColor: 'rgba(0, 131, 109, 0.3)' },
+          '50%': { borderColor: 'rgba(0, 131, 109, 0.6)' }
         }
       },
       animation: {

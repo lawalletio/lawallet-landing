@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Terminal, ExternalLink, Copy, Check } from "lucide-react";
+import { Terminal, ExternalLink, Copy, Check, BookOpen, ArrowRight } from "lucide-react";
 import { useScrollAnimation } from "./hooks";
 
 const TerminalBlock = ({ commands }: { commands: string[] }) => {
@@ -95,9 +95,9 @@ export const DeploySection = () => {
                 : "opacity-0 translate-y-8"
             }`}
           >
-            Connect your domain.
+            Self host
             <br />
-            <span className='text-gradient-gold'>Be live in minutes.</span>
+            <span className='text-gradient-gold'>your own instance</span>
           </h2>
           <p
             className={`mt-4 text-white/30 max-w-xl mx-auto transition-all duration-1000 delay-200 ${
@@ -106,11 +106,11 @@ export const DeploySection = () => {
                 : "opacity-0 translate-y-8"
             }`}
           >
-            Choose your deployment path. From instant cloud to full sovereignty.
+            From instant cloud to full sovereignty.
           </p>
         </div>
 
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-10'>
           {deployOptions.map((option, index) => (
             <div
               key={option.title}
@@ -186,7 +186,7 @@ export const DeploySection = () => {
                   href={option.deployUrl}
                   target='_blank'
                   rel='noopener noreferrer'
-                  className='mt-4 flex items-center justify-center gap-2 w-full h-10 rounded-xl font-semibold text-sm transition-all duration-300 bg-white text-black hover:bg-white/90 shadow-lg shadow-white/5 hover:shadow-white/10'
+                  className='mt-4 flex items-center justify-center gap-2 w-full h-10 rounded-xl font-semibold text-sm transition-all duration-300 bg-neutral-200 text-black hover:bg-neutral-100 shadow-lg shadow-black/20 hover:shadow-black/30'
                 >
                   <img src={option.logo} alt='' className='h-4 w-auto' />
                   Deploy on Vercel
@@ -195,6 +195,27 @@ export const DeploySection = () => {
               )}
             </div>
           ))}
+        </div>
+
+        {/* Developer docs CTA */}
+        <div
+          className={`flex flex-col items-center text-center transition-all duration-1000 delay-700 ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+          }`}
+        >
+          <p className='text-sm text-white/40 mb-4 font-mono'>
+            Need the full integration guide?
+          </p>
+          <a
+            href='https://docs.lawallet.io'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/[0.04] border border-white/[0.1] text-white hover:bg-white/[0.08] hover:border-lw-gold/40 hover:text-lw-gold transition-all duration-300'
+          >
+            <BookOpen className='h-4 w-4' />
+            <span className='font-semibold text-sm'>Developer documentation</span>
+            <ArrowRight className='h-4 w-4 transition-transform duration-300 group-hover:translate-x-1' />
+          </a>
         </div>
       </div>
     </section>
