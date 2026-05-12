@@ -1,12 +1,52 @@
 'use client'
 
 import React from 'react'
+import type { Event as NostrEvent } from 'nostr-tools/pure'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Check, Zap, ArrowRight, Mail, Globe } from 'lucide-react'
+import { Check, Zap, ArrowRight, Mail, Globe, X, Loader2, Search, Layers, Send } from 'lucide-react'
 import { useScrollAnimation } from './hooks'
+import {
+  fetchNip65Relays,
+  dedupeRelays,
+  publishToRelays,
+  type RelayWithSource,
+  type PublishResult,
+} from '@/lib/nostr-client'
 
-type Step = 'input' | 'checking' | 'choose' | 'submitting' | 'success'
+type Step = 'input' | 'checking' | 'choose' | 'submitting' | 'publishing' | 'success'
+
+type SubStepStatus = 'idle' | 'running' | 'done'
+
+interface PublishingState {
+  signing: SubStepStatus
+  nip05Discovery: SubStepStatus
+  nip65Discovery: SubStepStatus
+  dedupe: SubStepStatus
+  publishing: SubStepStatus
+  nip05Count: number
+  nip65Count: number
+  uniqueCount: number
+  relays: RelayWithSource[]
+  results: Map<string, PublishResult>
+  okCount: number
+  totalSettled: number
+}
+
+const initialPublishingState: PublishingState = {
+  signing: 'idle',
+  nip05Discovery: 'idle',
+  nip65Discovery: 'idle',
+  dedupe: 'idle',
+  publishing: 'idle',
+  nip05Count: 0,
+  nip65Count: 0,
+  uniqueCount: 0,
+  relays: [],
+  results: new Map(),
+  okCount: 0,
+  totalSettled: 0,
+}
 
 export const WaitlistSection = () => {
   const { ref, isVisible } = useScrollAnimation()
@@ -15,6 +55,11 @@ export const WaitlistSection = () => {
   const [step, setStep] = React.useState<Step>('input')
   const [error, setError] = React.useState('')
   const [hasNip05, setHasNip05] = React.useState(false)
+  const [pubState, setPubState] = React.useState<PublishingState>(initialPublishingState)
+
+  const updatePub = React.useCallback((patch: Partial<PublishingState>) => {
+    setPubState(prev => ({ ...prev, ...patch }))
+  }, [])
 
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault()
@@ -36,7 +81,6 @@ export const WaitlistSection = () => {
       const data = await res.json()
 
       if (data.isNostr) {
-        // npub or hex — subscribe directly via nostr
         await subscribe('nostr')
         return
       }
@@ -47,7 +91,6 @@ export const WaitlistSection = () => {
         return
       }
 
-      // No NIP-05 — subscribe as email directly
       await subscribe('email')
     } catch {
       setError('Something went wrong. Please try again.')
@@ -57,6 +100,7 @@ export const WaitlistSection = () => {
 
   const subscribe = async (method: 'email' | 'nostr' | 'both') => {
     setStep('submitting')
+    setPubState(initialPublishingState)
     try {
       const res = await fetch('/api/waitlist/subscribe', {
         method: 'POST',
@@ -64,17 +108,105 @@ export const WaitlistSection = () => {
         body: JSON.stringify({ email: contact, method }),
       })
       const data = await res.json()
-      if (data.success) {
-        setStep('success')
-        setContact('')
-      } else {
+
+      if (!data.success) {
         setError(data.error || 'Subscription failed. Please try again.')
         setStep(hasNip05 ? 'choose' : 'input')
+        return
       }
+
+      const isNostrFlow = data.type === 'nostr' || data.type === 'both'
+      if (isNostrFlow && data.signedEvent && data.pubkey) {
+        await runNostrPublishing({
+          event: data.signedEvent,
+          pubkey: data.pubkey,
+          nip05Relays: Array.isArray(data.nip05Relays) ? data.nip05Relays : [],
+          bootstrapRelays: Array.isArray(data.bootstrapRelays) ? data.bootstrapRelays : [],
+        })
+      }
+
+      setStep('success')
+      setContact('')
     } catch {
       setError('Something went wrong. Please try again.')
       setStep(hasNip05 ? 'choose' : 'input')
     }
+  }
+
+  const runNostrPublishing = async ({
+    event,
+    pubkey,
+    nip05Relays,
+    bootstrapRelays,
+  }: {
+    event: NostrEvent
+    pubkey: string
+    nip05Relays: string[]
+    bootstrapRelays: string[]
+  }) => {
+    setStep('publishing')
+    setPubState({
+      ...initialPublishingState,
+      signing: 'done',
+      nip05Discovery: 'running',
+      nip65Discovery: 'running',
+      nip05Count: nip05Relays.length,
+    })
+
+    // Resolve NIP-05 relays "instantly" (already have them) on a tiny delay so the user sees motion.
+    const nip05Promise = (async () => {
+      await new Promise(r => setTimeout(r, 250))
+      updatePub({ nip05Discovery: 'done', nip05Count: nip05Relays.length })
+      return nip05Relays
+    })()
+
+    const nip65Promise = (async () => {
+      const relays = await fetchNip65Relays(pubkey, bootstrapRelays)
+      updatePub({ nip65Discovery: 'done', nip65Count: relays.length })
+      return relays
+    })()
+
+    const [nip05, nip65] = await Promise.all([nip05Promise, nip65Promise])
+
+    updatePub({ dedupe: 'running' })
+    await new Promise(r => setTimeout(r, 200))
+    const merged = dedupeRelays({ nip65, nip05, defaults: bootstrapRelays })
+    setPubState(prev => ({
+      ...prev,
+      dedupe: 'done',
+      uniqueCount: merged.length,
+      relays: merged,
+      publishing: 'running',
+      results: new Map(),
+      okCount: 0,
+      totalSettled: 0,
+    }))
+
+    if (!merged.length) {
+      updatePub({ publishing: 'done' })
+      return
+    }
+
+    await publishToRelays(
+      event,
+      merged.map(r => r.url),
+      (result) => {
+        setPubState(prev => {
+          const results = new Map(prev.results)
+          results.set(result.url, result)
+          return {
+            ...prev,
+            results,
+            okCount: prev.okCount + (result.ok ? 1 : 0),
+            totalSettled: prev.totalSettled + 1,
+          }
+        })
+      },
+    )
+
+    updatePub({ publishing: 'done' })
+    // Brief pause so the user sees final state before transition
+    await new Promise(r => setTimeout(r, 600))
   }
 
   React.useEffect(() => {
@@ -100,6 +232,7 @@ export const WaitlistSection = () => {
     setError('')
     setContact('')
     setHasNip05(false)
+    setPubState(initialPublishingState)
   }
 
   if (step === 'success') {
@@ -136,7 +269,7 @@ export const WaitlistSection = () => {
     )
   }
 
-  const isLoading = step === 'checking' || step === 'submitting'
+  const isLoading = step === 'checking' || step === 'submitting' || step === 'publishing'
 
   return (
     <section id="waitlist-section" className="py-20 sm:py-28">
@@ -195,7 +328,9 @@ export const WaitlistSection = () => {
                   {isLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-black border-t-transparent" />
-                      <span>{step === 'checking' ? 'Checking' : 'Joining'}</span>
+                      <span>
+                        {step === 'checking' ? 'Checking' : step === 'publishing' ? 'Broadcasting' : 'Joining'}
+                      </span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
@@ -207,7 +342,6 @@ export const WaitlistSection = () => {
             </div>
           </form>
 
-          {/* NIP-05 detected — show notification choice */}
           {step === 'choose' && (
             <div className="mt-4 animate-fade-in">
               <p className="text-white/40 text-xs font-mono mb-3">
@@ -239,12 +373,15 @@ export const WaitlistSection = () => {
             </div>
           )}
 
-          {/* Loading spinner while submitting */}
           {step === 'submitting' && (
             <div className="mt-4 flex flex-col items-center gap-3 animate-fade-in">
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-lw-gold/30 border-t-lw-gold" />
-              <p className="text-white/40 text-xs font-mono">Sending notification...</p>
+              <p className="text-white/40 text-xs font-mono">Signing notification...</p>
             </div>
+          )}
+
+          {step === 'publishing' && (
+            <PublishingProgress state={pubState} />
           )}
 
           {error && (
@@ -254,4 +391,174 @@ export const WaitlistSection = () => {
       </div>
     </section>
   )
+}
+
+interface PublishingProgressProps {
+  state: PublishingState
+}
+
+const PublishingProgress: React.FC<PublishingProgressProps> = ({ state }) => {
+  const broadcastTotal = state.relays.length
+
+  return (
+    <div className="mt-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 backdrop-blur-sm animate-fade-in text-left">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="h-2 w-2 rounded-full bg-nwc-purple animate-pulse" />
+        <p className="text-xs font-mono text-white/60 uppercase tracking-wider">
+          Broadcasting via Nostr
+        </p>
+      </div>
+
+      <div className="space-y-2.5">
+        <StepRow
+          icon={<Zap className="h-3.5 w-3.5" />}
+          status={state.signing}
+          label="Signed NIP-04 message"
+          detail={state.signing === 'done' ? 'event signed by relay' : 'preparing'}
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <StepRow
+            compact
+            icon={<Search className="h-3.5 w-3.5" />}
+            status={state.nip05Discovery}
+            label="NIP-05 relays"
+            detail={
+              state.nip05Discovery === 'done'
+                ? `${state.nip05Count} found`
+                : 'looking up'
+            }
+          />
+          <StepRow
+            compact
+            icon={<Globe className="h-3.5 w-3.5" />}
+            status={state.nip65Discovery}
+            label="NIP-65 list"
+            detail={
+              state.nip65Discovery === 'done'
+                ? `${state.nip65Count} found`
+                : 'querying relays'
+            }
+          />
+        </div>
+        <StepRow
+          icon={<Layers className="h-3.5 w-3.5" />}
+          status={state.dedupe}
+          label="Deduplicating relays"
+          detail={state.dedupe === 'done' ? `${state.uniqueCount} unique` : 'merging lists'}
+        />
+        <StepRow
+          icon={<Send className="h-3.5 w-3.5" />}
+          status={state.publishing}
+          label="Publishing notification"
+          detail={
+            broadcastTotal === 0 && state.publishing !== 'idle'
+              ? 'no relays available'
+              : state.publishing === 'done'
+                ? `delivered to ${state.okCount}/${broadcastTotal}`
+                : `${state.totalSettled}/${broadcastTotal} settled`
+          }
+        />
+      </div>
+
+      {state.relays.length > 0 && state.publishing !== 'idle' && (
+        <div className="mt-4 pt-4 border-t border-white/[0.06]">
+          <p className="text-2xs font-mono text-white/30 uppercase tracking-wider mb-2">
+            Relays
+          </p>
+          <ul className="space-y-1 max-h-40 overflow-y-auto pr-1">
+            {state.relays.map(({ url, source }) => {
+              const result = state.results.get(url)
+              return (
+                <li
+                  key={url}
+                  className="flex items-center justify-between gap-2 text-xs font-mono"
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <RelayStatusDot result={result} />
+                    <span className="text-white/70 truncate">
+                      {url.replace(/^wss?:\/\//, '')}
+                    </span>
+                    <span
+                      className={`text-2xs px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                        source === 'nip65'
+                          ? 'bg-nwc-purple/20 text-nwc-purple'
+                          : source === 'nip05'
+                            ? 'bg-lw-teal/20 text-lw-teal'
+                            : 'bg-white/[0.06] text-white/40'
+                      }`}
+                    >
+                      {source}
+                    </span>
+                  </span>
+                  <span className="text-white/30 shrink-0">
+                    {result
+                      ? result.ok
+                        ? 'ok'
+                        : (result.error || 'failed').slice(0, 18)
+                      : '...'}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface StepRowProps {
+  icon: React.ReactNode
+  status: SubStepStatus
+  label: string
+  detail: string
+  compact?: boolean
+}
+
+const StepRow: React.FC<StepRowProps> = ({ icon, status, label, detail, compact }) => {
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-lg border transition-colors duration-300 ${
+        compact ? 'px-2.5 py-2' : 'px-3 py-2.5'
+      } ${
+        status === 'done'
+          ? 'border-lw-teal/20 bg-lw-teal/5'
+          : status === 'running'
+            ? 'border-nwc-purple/30 bg-nwc-purple/5'
+            : 'border-white/[0.06] bg-white/[0.02]'
+      }`}
+    >
+      <span
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+          status === 'done'
+            ? 'bg-lw-teal/20 text-lw-teal'
+            : status === 'running'
+              ? 'bg-nwc-purple/20 text-nwc-purple'
+              : 'bg-white/[0.06] text-white/40'
+        }`}
+      >
+        {status === 'running' ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : status === 'done' ? (
+          <Check className="h-3.5 w-3.5" />
+        ) : (
+          icon
+        )}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-white/80 truncate">{label}</p>
+        <p className="text-2xs font-mono text-white/40 truncate">{detail}</p>
+      </div>
+    </div>
+  )
+}
+
+const RelayStatusDot: React.FC<{ result?: PublishResult }> = ({ result }) => {
+  if (!result) {
+    return <Loader2 className="h-3 w-3 animate-spin text-nwc-purple/70 shrink-0" />
+  }
+  if (result.ok) {
+    return <Check className="h-3 w-3 text-lw-teal shrink-0" />
+  }
+  return <X className="h-3 w-3 text-lw-coral shrink-0" />
 }

@@ -1,13 +1,12 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { getPublicKey, finalizeEvent } from 'nostr-tools/pure'
+import { getPublicKey, finalizeEvent, type Event as NostrEvent } from 'nostr-tools/pure'
 import * as nip04 from 'nostr-tools/nip04'
 import * as nip19 from 'nostr-tools/nip19'
 import * as nip44 from 'nostr-tools/nip44'
 import { SimplePool } from 'nostr-tools/pool'
 import WebSocket from 'ws'
 
-// Polyfill WebSocket for Node.js (needed by nostr-tools SimplePool)
 if (typeof globalThis.WebSocket === 'undefined') {
   // @ts-expect-error ws types differ slightly from native WebSocket
   globalThis.WebSocket = WebSocket
@@ -40,6 +39,10 @@ function getRelays(): string[] {
   return DEFAULT_RELAYS
 }
 
+export function getDefaultRelays(): string[] {
+  return [...DEFAULT_RELAYS]
+}
+
 function getSecretKey(): Uint8Array {
   const key = process.env.PRIVATE_KEY
   if (!key) throw new Error('PRIVATE_KEY is not set')
@@ -61,20 +64,24 @@ function getConvKey(): Uint8Array {
   return nip44.v2.utils.getConversationKey(getSecretKey(), getOurPubkey())
 }
 
+export interface ResolvedIdentity {
+  pubkey: string
+  nip05Relays: string[]
+}
+
 /**
- * Resolve an npub, NIP-05 identifier, or hex pubkey to a hex public key.
+ * Resolve an npub, NIP-05 identifier, or hex pubkey to a hex pubkey.
+ * For NIP-05 inputs, also returns any `relays` declared in the .well-known/nostr.json response.
  */
-export async function resolveToPublicKey(input: string): Promise<string> {
+export async function resolveIdentity(input: string): Promise<ResolvedIdentity> {
   input = input.trim()
 
-  // npub1...
   if (input.startsWith('npub1')) {
     const { type, data } = nip19.decode(input)
     if (type !== 'npub') throw new Error('Invalid npub')
-    return data
+    return { pubkey: data, nip05Relays: [] }
   }
 
-  // NIP-05: user@domain
   if (input.includes('@')) {
     const [name, domain] = input.split('@')
     if (!name || !domain) throw new Error('Invalid NIP-05 format')
@@ -90,18 +97,25 @@ export async function resolveToPublicKey(input: string): Promise<string> {
     const json = await res.json()
     const pubkey = json?.names?.[name]
     if (!pubkey) throw new Error(`NIP-05: "${name}" not found at ${domain}`)
-    return pubkey
+
+    const relayMap = json?.relays
+    const relays = Array.isArray(relayMap?.[pubkey]) ? relayMap[pubkey].filter((r: unknown) => typeof r === 'string') : []
+    return { pubkey, nip05Relays: relays }
   }
 
-  // Raw 64-char hex pubkey
-  if (/^[0-9a-f]{64}$/i.test(input)) return input.toLowerCase()
+  if (/^[0-9a-f]{64}$/i.test(input)) return { pubkey: input.toLowerCase(), nip05Relays: [] }
 
   throw new Error('Provide an npub, NIP-05, or hex pubkey')
 }
 
 /**
- * Fetch the current encrypted waitlist from relays and decrypt it.
+ * Backward-compatible wrapper that returns just the resolved hex pubkey.
  */
+export async function resolveToPublicKey(input: string): Promise<string> {
+  const { pubkey } = await resolveIdentity(input)
+  return pubkey
+}
+
 async function fetchCurrentList(pool: SimplePool, relays: string[]): Promise<string[]> {
   const event = await pool.get(relays, {
     kinds: [WAITLIST_EVENT_KIND],
@@ -123,7 +137,6 @@ async function fetchCurrentList(pool: SimplePool, relays: string[]): Promise<str
 
 /**
  * Add a pubkey to the encrypted waitlist event and publish it.
- * Returns whether the pubkey was added and the total count.
  */
 export async function addPubkeyToWaitlist(pubkey: string): Promise<{ added: boolean; total: number }> {
   const relays = getRelays()
@@ -160,29 +173,17 @@ const WAITLIST_DM_MESSAGE = readFileSync(
 )
 
 /**
- * Send a NIP-04 encrypted DM to a pubkey with the waitlist welcome message.
+ * Build and sign a NIP-04 DM event addressed to `recipientPubkey`.
+ * Does NOT publish — the caller (typically the browser) is responsible for that.
  */
-export async function sendWaitlistNostrDM(recipientPubkey: string): Promise<boolean> {
-  const relays = getRelays()
-  const pool = new SimplePool()
+export function signWaitlistNostrDM(recipientPubkey: string): NostrEvent {
+  const sk = getSecretKey()
+  const content = nip04.encrypt(sk, recipientPubkey, WAITLIST_DM_MESSAGE)
 
-  try {
-    const sk = getSecretKey()
-    const content = nip04.encrypt(sk, recipientPubkey, WAITLIST_DM_MESSAGE)
-
-    const event = finalizeEvent({
-      kind: 4,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [['p', recipientPubkey]],
-      content,
-    }, sk)
-
-    await Promise.any(pool.publish(relays, event))
-    return true
-  } catch (error) {
-    console.warn('Nostr DM failed:', error instanceof Error ? error.message : error)
-    return false
-  } finally {
-    pool.close(relays)
-  }
+  return finalizeEvent({
+    kind: 4,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: [['p', recipientPubkey]],
+    content,
+  }, sk)
 }

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Github, BookOpen } from "lucide-react";
+import { ArrowRight, Github, Zap, Terminal, Star } from "lucide-react";
 import { useScrollAnimation } from "./hooks";
 import { DomainShowcase } from "./domain-showcase";
 import { DemoModal } from "./demo-modal";
@@ -30,10 +30,24 @@ export const HeroSection = () => {
             href='https://github.com/lawalletio/lawallet-nwc'
             target='_blank'
             rel='noopener noreferrer'
-            className='inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border border-lw-gold/20 text-lw-gold/70 bg-lw-gold/5 hover:bg-lw-gold/10 hover:text-lw-gold transition-colors'
+            className='group inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border border-lw-gold/20 text-lw-gold/70 bg-lw-gold/5 hover:bg-lw-gold/10 hover:text-lw-gold transition-colors'
           >
             <Github className='h-3 w-3' />
             Open source
+            <span
+              aria-hidden
+              className='mx-0.5 inline-block w-px h-3 bg-lw-gold/20'
+            />
+            <span className='relative inline-flex items-center'>
+              <span
+                aria-hidden
+                className='absolute inset-0 rounded-full bg-[#ffd57a]/30 animate-star-burst'
+              />
+              <Star className='relative h-3 w-3 fill-current animate-star-twinkle' />
+            </span>
+            <span className='text-[#ffd57a] group-hover:text-[#ffe09a] transition-colors font-semibold tracking-wide'>
+              Star
+            </span>
           </a>
         </div>
 
@@ -74,25 +88,39 @@ export const HeroSection = () => {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
         >
+          {/* Primary CTA — pulsing glow + shimmer sweep on hover */}
           <Button
             size='lg'
-            className='group px-8 py-5 rounded-full bg-lw-gold hover:bg-lw-gold/90 text-black font-semibold transition-all duration-300 shadow-lg shadow-lw-gold/20 hover:shadow-lw-gold/30 hover:scale-105'
+            className='group relative overflow-hidden px-8 py-5 rounded-full bg-lw-gold hover:bg-lw-gold text-black font-bold tracking-wide transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98] animate-cta-glow'
             onClick={() =>
               setDemoModal({ open: true, type: "admin" })
             }
           >
-            Connect your domain
-            <ArrowRight className='ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1' />
+            <span className='relative z-10 inline-flex items-center'>
+              <Zap className='h-4 w-4 mr-2 fill-current' />
+              Connect your domain
+              <ArrowRight className='ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1' />
+            </span>
+            <span
+              aria-hidden
+              className='pointer-events-none absolute inset-0 -skew-x-12 -translate-x-full group-hover:translate-x-[200%] transition-transform duration-[900ms] ease-out bg-gradient-to-r from-transparent via-white/35 to-transparent'
+            />
           </Button>
+
+          {/* Secondary CTA — cypherpunk terminal aesthetic */}
           <Button
             asChild
-            variant='outline'
             size='lg'
-            className='px-8 py-5 rounded-full bg-transparent border-white/[0.12] text-white hover:bg-white/[0.05] hover:text-lw-gold hover:border-lw-gold/30 font-semibold transition-all duration-300'
+            className='group relative px-7 py-5 rounded-full bg-transparent border border-lw-gold/30 text-lw-gold hover:bg-lw-gold/[0.06] hover:border-lw-gold/70 font-mono tracking-tight transition-all duration-300'
           >
-            <a href='#deploy'>
-              <BookOpen className='mr-2 h-4 w-4' />
-              Deploy
+            <a href='#deploy' className='inline-flex items-center'>
+              <Terminal className='mr-2 h-4 w-4' />
+              <span className='text-lw-gold/50 mr-1.5'>&gt;</span>
+              <span>self-hosted</span>
+              <span
+                aria-hidden
+                className='ml-1.5 inline-block w-[7px] h-[14px] bg-lw-gold/80 animate-terminal-blink translate-y-[1px]'
+              />
             </a>
           </Button>
         </div>
