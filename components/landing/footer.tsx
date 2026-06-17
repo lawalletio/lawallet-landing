@@ -43,6 +43,18 @@ export const Footer = () => (
           >
             OpenSats
           </a>
+          <a
+            href='/terms'
+            className='hover:text-lw-gold transition-colors duration-300'
+          >
+            Terms
+          </a>
+          <a
+            href='/privacy'
+            className='hover:text-lw-gold transition-colors duration-300'
+          >
+            Privacy
+          </a>
         </div>
 
         <p className='text-xs text-white/15 font-mono'>
