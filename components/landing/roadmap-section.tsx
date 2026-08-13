@@ -25,25 +25,25 @@ const roadmapItems = [
   {
     title: 'SDK & React Hooks',
     description: 'TypeScript client SDK, React hooks, CI/CD pipeline',
-    status: 'in_progress' as const,
+    status: 'completed' as const,
     icon: Code2
   },
   {
     title: 'User Dashboard & NWC Proxy',
     description: 'Profile, address config, courtesy NWC wallet provisioning',
-    status: 'in_progress' as const,
+    status: 'completed' as const,
     icon: Wallet
   },
   {
     title: 'Payment Listener & Zaps',
     description: 'NWC relay monitoring, webhooks (LUD-22), NIP-57 zaps',
-    status: 'in_progress' as const,
+    status: 'completed' as const,
     icon: Zap
   },
   {
     title: 'Deploy Everywhere',
     description: 'Vercel, Docker, Umbrel, Start9 — full documentation',
-    status: 'in_progress' as const,
+    status: 'publishing' as const,
     icon: Globe
   },
   {
@@ -59,6 +59,29 @@ const roadmapItems = [
     icon: Users
   }
 ]
+
+const statusStyles = {
+  completed: {
+    dot: 'bg-lw-teal border-lw-teal shadow-lg shadow-lw-teal/30',
+    badge: 'bg-lw-teal/10 text-lw-teal',
+    label: 'shipped',
+  },
+  publishing: {
+    dot: 'bg-lw-dark border-lw-gold animate-pulse-glow',
+    badge: 'bg-lw-gold/10 text-lw-gold',
+    label: 'publishing',
+  },
+  in_progress: {
+    dot: 'bg-lw-dark border-lw-gold animate-pulse-glow',
+    badge: 'bg-lw-gold/10 text-lw-gold',
+    label: 'building',
+  },
+  planned: {
+    dot: 'bg-lw-dark border-white/15',
+    badge: 'bg-white/5 text-white/25',
+    label: 'planned',
+  },
+} as const
 
 export const RoadmapSection = () => {
   const { ref, isVisible } = useScrollAnimation()
@@ -105,13 +128,7 @@ export const RoadmapSection = () => {
                 }}
               >
                 <div
-                  className={`absolute left-4 top-4 w-4 h-4 rounded-full border-2 ${
-                    item.status === 'completed'
-                      ? 'bg-lw-teal border-lw-teal shadow-lg shadow-lw-teal/30'
-                      : item.status === 'in_progress'
-                        ? 'bg-lw-dark border-lw-gold animate-pulse-glow'
-                        : 'bg-lw-dark border-white/15'
-                  }`}
+                  className={`absolute left-4 top-4 w-4 h-4 rounded-full border-2 ${statusStyles[item.status].dot}`}
                 />
 
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5 hover:bg-white/[0.04] transition-all duration-300 group">
@@ -119,19 +136,9 @@ export const RoadmapSection = () => {
                     <item.icon className="h-4 w-4 text-white/30 group-hover:text-lw-gold transition-colors duration-300" />
                     <h3 className="text-base font-semibold text-white">{item.title}</h3>
                     <span
-                      className={`ml-auto text-xs font-mono px-2.5 py-0.5 rounded-full ${
-                        item.status === 'completed'
-                          ? 'bg-lw-teal/10 text-lw-teal'
-                          : item.status === 'in_progress'
-                            ? 'bg-lw-gold/10 text-lw-gold'
-                            : 'bg-white/5 text-white/25'
-                      }`}
+                      className={`ml-auto text-xs font-mono px-2.5 py-0.5 rounded-full ${statusStyles[item.status].badge}`}
                     >
-                      {item.status === 'completed'
-                        ? 'shipped'
-                        : item.status === 'in_progress'
-                          ? 'building'
-                          : 'planned'}
+                      {statusStyles[item.status].label}
                     </span>
                   </div>
                   <p className="text-sm text-white/30 ml-7">{item.description}</p>
