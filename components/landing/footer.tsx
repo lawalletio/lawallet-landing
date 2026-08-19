@@ -44,16 +44,16 @@ export const Footer = () => (
             OpenSats
           </a>
           <a
-            href='/terms'
+            href='/download'
             className='hover:text-lw-gold transition-colors duration-300'
           >
-            Terms
+            Download
           </a>
           <a
-            href='/privacy'
+            href='/legal'
             className='hover:text-lw-gold transition-colors duration-300'
           >
-            Privacy
+            Terms &amp; Privacy
           </a>
         </div>
 
