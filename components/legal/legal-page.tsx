@@ -1,8 +1,23 @@
 import type React from 'react'
 import { Footer } from '@/components/landing'
 
-export const H2 = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="text-xl font-semibold text-white mt-12 mb-4">{children}</h2>
+export const H3 = ({ children }: { children: React.ReactNode }) => (
+  <h3 className="text-xl font-semibold text-white mt-12 mb-4">{children}</h3>
+)
+
+export const Section = ({
+  id,
+  title,
+  children,
+}: {
+  id: string
+  title: string
+  children: React.ReactNode
+}) => (
+  <section id={id} className="scroll-mt-24 mt-20 first:mt-0">
+    <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{title}</h2>
+    <div className="mt-6">{children}</div>
+  </section>
 )
 
 export const P = ({ children }: { children: React.ReactNode }) => (
